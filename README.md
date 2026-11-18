@@ -1,12 +1,16 @@
 # SneakPeek Glass
 
-Review a coding agent’s permission request from a 600 × 600 display. See which project is waiting, deny the action, send it back to the host, or approve a narrowly scoped read. This prototype grew out of a conversation at an AI event in Helsinki.
+After trying Meta Ray-Ban Display at an AI event in Helsinki, I wanted to test how everyday decisions about an agent’s work would feel on the glasses. What do I need to see on a 600 × 600 display before I can approve an action or send it back? I tried this with a customer renewal and with permission requests from coding agents.
 
-[Watch the 30-second four-harness demo](docs/four-harnesses.mp4). In Meta’s Chrome simulator, the wearer sends an Antigravity edit back for review, continues a read under GitHub Copilot CLI’s permission policy, approves a Claude Code read, and denies a Codex CLI push. The recording uses sample requests through the local hook adapters and relay.
+## Watch the decisions in Meta’s display simulator
 
-[Watch the 17-second Claude Code and Codex demo](docs/simulator-demo.mp4).
+**Customer renewal · 21 seconds.** The brief is one year at €1,000 a month. Both drafts quote that monthly rate. The wearer checks the term and total, approves the €12,000 offer, and returns the €24,000 draft with a request to restore the 12-month term. The customer, outbox and agent inbox are simulated. [Watch the renewal demo](docs/renewal-demo.mp4)
 
-[Watch the 21-second customer renewal demo](docs/renewal-demo.mp4). The brief authorizes 12 months at €1,000/month. The wearer approves the €12,000 offer, then sends an alternate €24,000 draft back to the agent with a request to restore the original term. The customer, outbox and agent inbox are simulated. To replay it yourself, run `python3 -m http.server 8090 --bind 127.0.0.1 --directory docs/renewal` from the checkout, open `http://127.0.0.1:8090/` in Chrome and enable Meta’s display simulator.
+**Four coding agents · 30 seconds.** The wearer sends an Antigravity edit back to inspect the change, continues a read under GitHub Copilot CLI’s own permission policy, approves a Claude Code read, and denies a Codex CLI push. Sample requests pass through the local hook adapters and relay. [Watch all four agents](docs/four-harnesses.mp4)
+
+**Two coding decisions · 17 seconds.** Watch the wearer confirm a single README read in Claude Code and deny a Git push in Codex. [Watch the short walkthrough](docs/simulator-demo.mp4)
+
+All three videos were recorded in Meta’s Chrome simulator. To try the renewal yourself, run `python3 -m http.server 8090 --bind 127.0.0.1 --directory docs/renewal` from the checkout, open `http://127.0.0.1:8090/` in Chrome and enable Meta’s display simulator.
 
 ![Concept view of the Helsinki prototype](docs/sneakpeek-glass-pov.png)
 
