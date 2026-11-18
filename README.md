@@ -30,7 +30,7 @@ Choose the example for your host. Merge it into the indicated file, set the hook
 | Claude Code | [Example](hook/settings.example.json) → `~/.claude/settings.json` | Approve eligible reads, deny, or return to the permission dialog. |
 | Codex CLI / app-server | [Example](hook/codex.example.json) → `~/.codex/hooks.json`. Review and trust the new hook via `/hooks`. | Deny or defer a native approval request. Shell escalations, patches and external tools require approval in Codex. |
 | Antigravity | [Example](hook/antigravity.example.json) → `.agents/hooks.json` in the target workspace | Approve an eligible single-file read, deny a matched tool, or request host review. The adapter uses the single-workspace context. |
-| GitHub Copilot CLI | [Example](hook/copilot.example.json) → `.github/hooks/sneakpeek.json` in the target repository | Deny, request a host prompt, or continue a bounded read through Copilot’s own permission policy. |
+| GitHub Copilot CLI | [Example](hook/copilot.example.json) → `~/.copilot/hooks/sneakpeek.json` | Deny, request a host prompt, or continue a bounded read through Copilot’s own permission policy. |
 
 Claude and Codex use `PermissionRequest`. Already-permitted operations generally produce no card. The Antigravity and Copilot examples use pre-tool hooks for selected tools, so a card can appear before the host evaluates its own permissions. Their host button requests a native prompt. In a noninteractive session, the host may deny instead. [Claude Code](https://code.claude.com/docs/en/hooks#permissionrequest) · [Codex](https://developers.openai.com/codex/hooks) · [Antigravity](https://antigravity.google/docs/hooks) · [GitHub Copilot CLI](https://docs.github.com/en/copilot/reference/hooks-reference)
 
@@ -41,6 +41,10 @@ node -e 'console.log(JSON.stringify({hook_event_name:"PermissionRequest", sessio
 ```
 
 ## What can you approve?
+
+<img src="docs/lens-preview.png" alt="Browser capture showing a Claude Code request to read README.md, with Terminal focused" width="400">
+
+*Desktop browser capture at 600 × 600 from the automated interaction test.*
 
 The display starts with **Terminal** or **Host** focused. Use left or right to choose an action. Two separate activations within three seconds approve the current request. Moving focus cancels confirmation.
 
@@ -61,5 +65,7 @@ The relay writes decision metadata as JSON lines to stdout. Each entry records t
 Run `npm test` for the relay and hook process tests. With Chrome installed, run `npm ci` and `npm run test:browser` on Node 20+ for the 600 × 600 interaction test. GitHub Actions runs both suites.
 
 The installed clients were exercised on macOS using loopback model fixtures and scratch projects. Claude Code 2.1.98 read a fixture document after approval. Codex CLI 0.144.5 (app-server) returned the lens denial for a shell escalation. Antigravity CLI 1.5.6 blocked a command and read a fixture document after approval. GitHub Copilot CLI 1.0.93-1 returned the lens denial for a shell tool. The desktop IDEs and Copilot cloud agent were outside those runs.
+
+For an on-device trial, pair a fresh relay with the glasses, run the README smoke command, and verify that two separate pinches produce one approval. Then deny a shell request, close the app during a pending request, and confirm that the host regains control. Record the glasses and phone software versions with the outcome.
 
 The app targets the display model. Physical gesture timing, phone tethering, pairing-link handling, readability in daylight, and battery use still need an on-device trial. Keep the app in the foreground during a trial. [Meta Web Apps](https://developers.meta.com/wearables/web-apps/)
