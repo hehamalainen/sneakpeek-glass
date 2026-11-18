@@ -2,7 +2,9 @@
 
 Review a coding agent’s permission request from a 600 × 600 display. See which project is waiting, deny the action, send it back to the host, or approve a narrowly scoped read. This prototype grew out of a conversation at an AI event in Helsinki.
 
-[Watch the 17-second simulator demo](docs/simulator-demo.mp4). Two sample requests pass through the local relay: the wearer approves a README read and denies a Git push. The footage was recorded in Meta’s Chrome simulator.
+[Watch the 30-second four-harness demo](docs/four-harnesses.mp4). In Meta’s Chrome simulator, the wearer sends an Antigravity edit back for review, continues a read under GitHub Copilot CLI’s permission policy, approves a Claude Code read, and denies a Codex CLI push. The recording uses sample requests through the local hook adapters and relay.
+
+[Watch the 17-second Claude Code and Codex demo](docs/simulator-demo.mp4).
 
 ![Concept view of the Helsinki prototype](docs/sneakpeek-glass-pov.png)
 
