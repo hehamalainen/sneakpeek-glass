@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PermissionRequest": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ~/sneakpeek-glass/hook/sneakpeek-hook.mjs",
+            "timeout": 120
+          }
+        ]
+      }
+    ]
+  }
+}
