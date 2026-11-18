@@ -2,6 +2,8 @@
 
 Review a coding agent’s permission request from a 600 × 600 display. See which project is waiting, deny the action, send it back to the host, or approve a narrowly scoped read. This prototype grew out of a conversation at an AI event in Helsinki.
 
+[Watch the 17-second simulator demo](docs/simulator-demo.mp4). Two sample requests pass through the local relay: the wearer approves a README read and denies a Git push. The footage was recorded in Meta’s Chrome simulator.
+
 ![Concept view of the Helsinki prototype](docs/sneakpeek-glass-pov.png)
 
 *Concept view.* The original sketch shows a Git push. The reviewed build requires terminal approval for every shell command, including that push.
@@ -20,6 +22,8 @@ unset pair_code
 ```
 
 For a desktop preview, append the printed suffix to `http://127.0.0.1:8787/` and open the resulting address in a browser. For Meta Ray-Ban Display, route a trusted HTTPS tunnel to the same loopback port. For example, run `cloudflared tunnel --url http://127.0.0.1:8787` in another terminal. Append the suffix to its HTTPS address and use **Add a Web App** in the Meta AI app’s developer settings. The code pairs one browser per relay start, so choose the glasses or the desktop for each run. [Meta’s setup guidance](https://developers.meta.com/wearables/faq/)
+
+To try the simulated display, open the paired desktop preview in Chrome and click the [Meta Ray-Ban Display Simulator](https://chromewebstore.google.com/detail/meta-ray-ban-display-simu/jpjlmmodokemlepklkdbimceggpbjcll) extension. Use the arrow keys to move focus and Enter to select. The smoke command below supplies a sample permission request.
 
 ### Connect your agent
 
