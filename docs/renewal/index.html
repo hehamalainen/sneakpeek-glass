@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>SneakPeek Glass · Renewal demo</title>
+<style>
+  :root { color-scheme: dark; font: 500 clamp(16px, 4vmin, 25px)/1.3 system-ui, sans-serif; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #000; color: #fff; }
+  main { max-width: 29rem; height: 100dvh; margin: auto; padding: 6vmin; display: grid; grid-template-rows: auto 1fr auto; gap: .7rem; }
+  header, footer { display: flex; align-items: center; gap: .55rem; }
+  header { justify-content: space-between; font-size: .8rem; }
+  header b { letter-spacing: .08em; }
+  header span, #note { color: #d3d8d8; }
+  article { align-self: center; }
+  #label { font-size: .86rem; color: #9aebbb; font-weight: 680; }
+  #label.exception { color: #ffd18c; }
+  h1 { font-size: 1.78rem; line-height: 1.08; letter-spacing: -.025em; margin: .38rem 0 .65rem; }
+  #terms { font-size: 1.15rem; margin: 0; font-weight: 640; }
+  #note { margin: .42rem 0 0; }
+  button { background: #0c1211; color: white; padding: .58rem .45rem; border: 2px solid #a3b1ac; border-radius: .46rem; font: 650 .94rem/1.2 system-ui; flex: 1; }
+  button:focus { outline: 3px solid white; outline-offset: 3px; }
+  button[data-tone="approve"] { border-color: #84e6af; }
+  button[data-tone="return"] { border-color: #ffcd89; }
+</style>
+</head>
+<body>
+<main>
+  <header><b>SNEAKPEEK</b><span>Renewal demo</span></header>
+  <article aria-live="polite" aria-atomic="true">
+    <div id="label"></div>
+    <h1 id="title"></h1>
+    <p id="terms"></p>
+    <p id="note"></p>
+  </article>
+  <footer aria-label="Decision"></footer>
+</main>
+<script>
+  const get = id => document.getElementById(id);
+  const actions = document.querySelector('footer');
+  const monthly = 1000;
+  const briefMonths = 12;
+  const euro = amount => '€' + amount.toLocaleString('en-GB');
+  let months = briefMonths;
+  function screen(label, title, terms, note) {
+    get('label').textContent = label;
+    get('label').classList.toggle('exception', months !== briefMonths);
+    get('title').textContent = title;
+    get('terms').textContent = terms;
+    get('note').textContent = note;
+    actions.replaceChildren();
+  }
+  function button(name, action, tone) {
+    const el = document.createElement('button');
+    el.textContent = name;
+    if (tone) el.dataset.tone = tone;
+    el.onclick = action;
+    actions.append(el);
+  }
+  function offer() {
+    const matches = months === briefMonths;
+    screen(matches ? 'Within your brief' : 'Term exceeds your brief',
+      'Renewal for Kajo', months + ' months · ' + euro(months * monthly) + ' total',
+      'Your brief: 12 months at €1,000/month.');
+    button('Read draft', draft);
+    if (matches) button('Approve offer', confirmSend, 'approve');
+    else button('Send back', confirmReturn, 'return');
+  }
+  function draft() {
+    screen('Draft email', 'To Aino at Kajo',
+      'We can renew for ' + months + ' months at €1,000/month (' + euro(months * monthly) + ' total).',
+      'Would you like to proceed?');
+    button('Back to decision', offer);
+  }
+  function confirmSend() {
+    if (months !== briefMonths) return;
+    screen('Confirm approval', 'Send offer to Aino?', '12 months · €12,000 total', 'One renewal email to Kajo.');
+    button('Back', offer);
+    button('Confirm send', sent, 'approve');
+  }
+  function sent() {
+    if (months !== briefMonths) return;
+    screen('Demo outbox', 'Offer approved', 'To Aino at Kajo · 12 months', '€12,000 renewal offer queued.');
+    button('Try alternate draft', () => { months = 24; offer(); });
+  }
+  function confirmReturn() {
+    screen('Feedback to renewal agent', 'Request a revision?', 'Restore the 12-month term.', 'Keep the rate at €1,000/month.');
+    button('Back', offer);
+    button('Send feedback', returned, 'return');
+  }
+  function returned() {
+    screen('Demo agent inbox', 'Returned to agent', 'Restore the 12-month term.', '24-month offer withheld from Kajo.');
+    button('Replay', () => { months = briefMonths; offer(); });
+  }
+  document.addEventListener('keydown', event => {
+    if (event.repeat && ['Enter', ' '].includes(event.key)) { event.preventDefault(); return; }
+    if (!['ArrowLeft', 'ArrowRight'].includes(event.key)) return;
+    event.preventDefault();
+    const buttons = [...actions.children];
+    const current = buttons.indexOf(document.activeElement);
+    const offset = event.key === 'ArrowRight' ? 1 : -1;
+    buttons[Math.max(0, Math.min(buttons.length - 1, current + offset))].focus();
+  });
+  offer();
+</script>
+</body>
+</html>

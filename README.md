@@ -6,6 +6,8 @@ Review a coding agent’s permission request from a 600 × 600 display. See whic
 
 [Watch the 17-second Claude Code and Codex demo](docs/simulator-demo.mp4).
 
+[Watch the 21-second customer renewal demo](docs/renewal-demo.mp4). The brief authorizes 12 months at €1,000/month. The wearer approves the €12,000 offer, then sends an alternate €24,000 draft back to the agent with a request to restore the original term. The customer, outbox and agent inbox are simulated. To replay it yourself, run `python3 -m http.server 8090 --bind 127.0.0.1 --directory docs/renewal` from the checkout, open `http://127.0.0.1:8090/` in Chrome and enable Meta’s display simulator.
+
 ![Concept view of the Helsinki prototype](docs/sneakpeek-glass-pov.png)
 
 *Concept view.* The original sketch shows a Git push. The reviewed build requires terminal approval for every shell command, including that push.
