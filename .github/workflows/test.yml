@@ -1,0 +1,31 @@
+name: Test
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  relay:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [18, 20, 22, 24]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - run: npm test
+  lens:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      - run: npm ci --ignore-scripts
+      - run: npm run test:browser
+        env:
+          SCREENSHOT_PATH: lens-preview.png
+      - uses: actions/upload-artifact@v4
+        with:
+          name: lens-preview
+          path: lens-preview.png

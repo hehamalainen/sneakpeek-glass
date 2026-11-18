@@ -5,145 +5,170 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>SneakPeek Glass</title>
 <style>
-  /* Additive display: black = transparent. Keep surfaces bounded, never full-bright. */
-  :root {
-    --fg: #f2f2f2; --dim: #9a9a9a; --surface: #161616; --line: #2a2a2a;
-    --ok: #5fe08a; --warn: #ffd166; --bad: #ff6b6b; --focus: #ffffff;
-  }
+  :root { color-scheme: dark; font: 500 clamp(16px, 4vmin, 26px)/1.32 system-ui, sans-serif; }
   * { box-sizing: border-box; }
-  html, body { margin: 0; height: 100%; background: #000; color: var(--fg);
-    font: 500 clamp(14px, 4.2vmin, 26px)/1.3 system-ui, -apple-system, "Segoe UI", sans-serif; }
-  main { height: 100%; display: grid; grid-template-rows: auto minmax(0, 1fr) auto; gap: 3vmin; padding: 6vmin; }
-  header { display: flex; justify-content: space-between; align-items: baseline; color: var(--dim); font-size: .8em; }
-  header b { color: var(--fg); letter-spacing: .04em; }
-  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 3vmin; padding: 4vmin;
-    display: grid; gap: 2vmin; align-content: start; align-self: center; min-block-size: 0; overflow: hidden; }
-  .meta { display: flex; gap: 2vmin; align-items: center; flex-wrap: wrap; font-size: .8em; color: var(--dim); }
-  .risk { padding: .1em .5em; border-radius: 1em; border: 1.5px solid currentColor; font-weight: 700; text-transform: uppercase; font-size: .75em; }
-  .risk.low { color: var(--ok); } .risk.medium { color: var(--warn); } .risk.high { color: var(--bad); }
-  .what { font-family: ui-monospace, Menlo, monospace; font-size: .85em; word-break: break-word;
-    display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
-  .intent { color: var(--dim); font-size: .8em; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
-  .intent::before { content: "→ heading: "; color: var(--fg); }
-  .why { color: var(--bad); font-size: .8em; }
-  .actions { display: flex; gap: 2vmin; }
-  button { flex: 1; font: inherit; font-weight: 700; color: var(--fg); background: var(--surface);
-    border: 2px solid var(--line); border-radius: 2.5vmin; padding: 2.5vmin 1vmin; }
-  button:focus-visible, button:focus { outline: 3px solid var(--focus); outline-offset: 2px; }
-  button.allow { border-color: var(--ok); } button.deny { border-color: var(--bad); }
-  button.confirm { background: #0f2a18; }
-  .empty { display: grid; place-items: center; text-align: center; color: var(--dim); }
-  .empty strong { display: block; color: var(--ok); font-size: 1.4em; }
-  .recent { font-size: .7em; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  body { margin: 0; background: black; color: #f3f4f4; }
+  main { margin: auto; max-width: 30rem; height: 100vh; height: 100dvh; padding: 6vmin;
+    display: grid; grid-template-rows: auto minmax(0,1fr) auto; gap: .7rem; }
+  header, .meta, .actions { display: flex; align-items: center; gap: .5rem; }
+  header { justify-content: space-between; font-size: .8rem; color: #b9bfc2; }
+  header b { color: white; letter-spacing: .08em; }
+  article { align-self: center; min-width: 0; padding: 1rem; border: 1px solid #444;
+    border-radius: .7rem; background: #121414; overflow-wrap: anywhere; }
+  .meta { flex-wrap: wrap; font-size: .8rem; }
+  #risk { padding: .12em .5em; border: 1px solid currentColor; border-radius: 1em; color: #83e4aa; }
+  #risk.high { color: #ffd184; }
+  #what { margin: .7rem 0; font: 500 .94rem/1.3 ui-monospace, monospace; }
+  #context, #recent { color: #b9bfc2; font-size: .74rem; }
+  .empty { align-self: center; text-align: center; }
+  h1 { font-size: 1.35rem; margin: 0 0 .25em; }
+  #hint { font-size: .85rem; color: #b9bfc2; margin: 0; }
+  button { flex: 1; background: #161818; color: white; padding: .6rem .2rem; font: 650 .95rem system-ui;
+    border: 2px solid #777; border-radius: .48rem; }
+  #deny { border-color: #ed8986; } #allow { border-color: #83e4aa; }
+  button:focus { outline: 3px solid white; outline-offset: 3px; }
+  #allow.armed { background: #153b23; }
+  #recent { min-height: 1.4em; margin-top: .45rem; }
   [hidden] { display: none !important; }
 </style>
 </head>
 <body>
 <main>
-  <header><b>SNEAKPEEK</b><span id="status">connecting…</span></header>
-
-  <section id="empty" class="empty"><div><strong>All clear</strong>No agent is waiting for you.</div></section>
-
-  <section id="card" class="card" hidden aria-live="polite">
-    <div class="meta"><span class="risk" id="risk">medium</span><span id="project"></span><span id="tool"></span></div>
-    <div class="what" id="what"></div>
-    <div class="intent" id="intent"></div>
-    <div class="why" id="why"></div>
-  </section>
-
-  <footer>
-    <div class="actions" id="actions" hidden>
-      <button class="deny" id="deny">Deny</button>
-      <button id="later">Terminal</button>
-      <button class="allow" id="allow">Approve</button>
-    </div>
-    <div class="recent" id="recent"></div>
-  </footer>
+<header><b>SNEAKPEEK</b><span id="status" role="status">Connecting</span></header>
+<section id="empty" class="empty"><h1 id="headline">Connecting</h1><p id="hint">Checking the relay…</p></section>
+<article id="card" hidden aria-live="polite">
+  <div class="meta"><b id="risk"></b><span id="tool"></span></div>
+  <p id="what"></p><div id="context"></div>
+</article>
+<footer>
+  <div id="actions" class="actions" hidden>
+    <button id="deny">Deny</button><button id="later">Terminal</button><button id="allow">Approve</button>
+  </div>
+  <div id="recent" role="status"></div>
+</footer>
 </main>
-
 <script>
-  // Token: open the app once as https://<relay>/?t=<token>; it is kept in localStorage.
-  const qs = new URLSearchParams(location.search);
-  let token = qs.get('t');
-  try { if (token) localStorage.setItem('sp_token', token); else token = localStorage.getItem('sp_token'); } catch {}
-  if (qs.get('t')) history.replaceState(null, '', location.pathname); // keep token out of the visible URL
-
-  const $ = (id) => document.getElementById(id);
-  let current = null, armedUntil = 0, queueLen = 0, inFlight = false;
-
-  async function api(path, opts = {}) {
-    const r = await fetch(path, { ...opts, headers: { 'content-type': 'application/json', 'x-sneakpeek-token': token || '', ...(opts.headers || {}) } });
-    if (!r.ok) throw Object.assign(new Error((await r.json().catch(() => ({}))).error || r.status), { status: r.status });
-    return r.json();
-  }
-
-  function render(items, recent) {
-    queueLen = items.length;
-    const next = items[0] || null;
-    $('status').textContent = queueLen ? `${queueLen} waiting` : 'watching';
-    $('recent').textContent = recent.length
-      ? 'last: ' + recent.map(r => `${r.decision === 'allow' ? '✓' : r.decision === 'deny' ? '✕' : '…'} ${r.project}`).join('  ')
-      : '';
-
-    if (!next) { current = null; $('card').hidden = $('actions').hidden = true; $('empty').hidden = false; return; }
-    if (current && current.id === next.id) return; // don't steal focus mid-decision
-
-    current = next; disarm();
-    $('empty').hidden = true; $('card').hidden = $('actions').hidden = false;
-    $('risk').textContent = next.risk; $('risk').className = 'risk ' + next.risk;
-    $('project').textContent = next.project; $('tool').textContent = next.tool;
-    $('what').textContent = next.summary || '(no summary)';
-    $('intent').textContent = next.intent; $('intent').hidden = !next.intent;
-    $('why').textContent = next.risk === 'high' ? `⚠ ${next.riskReasons.join(', ')} — approve at terminal` : '';
-    $('allow').hidden = next.risk === 'high';
-    // Safe default: focus lands on "Terminal" so a stray pinch never approves.
-    $('later').focus();
-  }
-
-  function disarm() { armedUntil = 0; $('allow').textContent = 'Approve'; $('allow').classList.remove('confirm'); }
-
-  async function decide(decision) {
-    if (!current || inFlight) return;
-    inFlight = true;
-    try { await api(`/api/requests/${current.id}/decision`, { method: 'POST', body: JSON.stringify({ decision }) }); }
-    catch (e) { $('status').textContent = 'error: ' + e.message; }
-    finally { inFlight = false; current = null; poll(); }
-  }
-
-  $('deny').addEventListener('click', () => decide('deny'));
-  $('later').addEventListener('click', () => decide('defer'));
-  $('allow').addEventListener('click', () => {
-    // Two-step approve: first activation arms, second within 3 s commits.
-    if (Date.now() < armedUntil) { disarm(); decide('allow'); return; }
-    armedUntil = Date.now() + 3000;
-    $('allow').textContent = 'Confirm ✓'; $('allow').classList.add('confirm');
-    setTimeout(() => { if (Date.now() >= armedUntil) disarm(); }, 3100);
+const $ = id => document.getElementById(id);
+const storageKey = 'sneakpeek.viewer';
+let token, current, confirmTimer, armedUntil = 0, generation = 0, pollTimer;
+let busy = false;
+async function api(route, key, body) {
+  const response = await fetch(route, {
+    method: body ? 'POST' : 'GET', redirect: 'error',
+    headers: { 'x-sneakpeek-token': key, 'content-type': 'application/json' },
+    body: body && JSON.stringify(body), signal: AbortSignal.timeout(6000),
   });
-
-  // Fallback for desktop preview: the glasses do native spatial navigation; if focus
-  // didn't move after the browser's own handling, step through the visible buttons.
-  document.addEventListener('keydown', (e) => {
-    if (e.key !== 'ArrowLeft' && e.key !== 'ArrowRight') return;
-    const before = document.activeElement;
-    setTimeout(() => {
-      if (document.activeElement !== before) return;
-      const btns = [...document.querySelectorAll('#actions button')].filter(b => !b.hidden);
-      const i = btns.indexOf(before);
-      if (i === -1) return;
-      const next = btns[Math.max(0, Math.min(btns.length - 1, i + (e.key === 'ArrowRight' ? 1 : -1)))];
-      next.focus();
-    }, 0);
-  });
-
-  async function poll() {
-    if (!token) { $('status').textContent = 'no token — open with ?t='; return; }
-    try { const d = await api('/api/pending'); render(d.items, d.recent); }
-    catch (e) { $('status').textContent = e.status === 401 ? 'bad token' : 'offline'; }
+  if (!response.ok) throw Object.assign(new Error(), { status: response.status });
+  return response.json();
+}
+function disarm() {
+  clearTimeout(confirmTimer);
+  armedUntil = 0;
+  $('allow').classList.remove('armed');
+  $('allow').textContent = 'Approve';
+}
+function message(title, hint, status) {
+  current = null;
+  disarm();
+  $('actions').hidden = $('card').hidden = true;
+  $('empty').hidden = false;
+  $('headline').textContent = title;
+  $('hint').textContent = hint;
+  $('status').textContent = status;
+}
+function render({items, recent}) {
+  const next = items[0];
+  const last = recent[0];
+  const verbs = { allow: 'Approved', deny: 'Denied', defer: 'Deferred' };
+  $('recent').textContent = last ? verbs[last.decision] + ' · ' + last.project : '';
+  if (!next) return message('All clear', 'No permission requests are waiting.', 'Connected');
+  $('status').textContent = items.length + ' waiting';
+  if (current?.id === next.id) return;
+  disarm();
+  current = next;
+  $('empty').hidden = true;
+  $('card').hidden = $('actions').hidden = false;
+  const restricted = next.risk !== 'low';
+  $('allow').hidden = restricted;
+  $('risk').className = restricted ? 'high' : '';
+  $('risk').textContent = restricted ? 'Terminal approval' : 'Read only';
+  $('tool').textContent = next.tool;
+  $('what').textContent = next.summary;
+  $('context').textContent = next.project + ' · session ' + next.session;
+  $('later').focus();
+}
+async function poll() {
+  clearTimeout(pollTimer);
+  if (busy || document.hidden || !token) return;
+  const epoch = ++generation;
+  try {
+    const data = await api('/api/pending', token);
+    if (epoch === generation) render(data);
+  } catch (err) {
+    if (epoch !== generation) return;
+    if (err.status === 401) {
+      token = null;
+      message('Pair this display', 'Open a fresh pairing link from the relay owner.', 'Unpaired');
+    } else message('Relay offline', 'Check the Mac or use Claude Code.', 'Reconnecting');
+  } finally {
+    if (epoch === generation && token) pollTimer = setTimeout(poll, 1500);
   }
-
-  // Polling is the safe baseline (WebSocket/SSE support on-glasses isn't documented yet).
-  poll();
-  setInterval(() => { if (!inFlight) poll(); }, 1500);
+}
+async function decide(decision) {
+  if (!current || busy || document.hidden) return;
+  const id = current.id;
+  busy = true;
+  ++generation;
+  clearTimeout(pollTimer);
+  message('Sending decision', '', 'Sending');
+  try { await api('/api/requests/' + id + '/decision', token, {decision}); }
+  catch { $('recent').textContent = 'Decision unconfirmed. Check Claude Code.'; }
+  finally { busy = false; await poll(); }
+}
+$('later').onclick = () => decide('defer');
+$('deny').onclick = () => decide('deny');
+$('allow').onclick = () => {
+  if (current?.risk !== 'low') return;
+  if (performance.now() < armedUntil) return decide('allow');
+  disarm();
+  armedUntil = performance.now() + 3000;
+  $('allow').textContent = 'Confirm';
+  $('allow').classList.add('armed');
+  confirmTimer = setTimeout(disarm, 3000);
+};
+$('allow').onblur = disarm;
+window.addEventListener('blur', disarm);
+document.addEventListener('keydown', event => {
+  if (event.repeat && ['Enter', ' '].includes(event.key)) { event.preventDefault(); return; }
+  if (!['ArrowRight', 'ArrowLeft'].includes(event.key) || !current) return;
+  const buttons = [...$('actions').querySelectorAll('button')].filter(b => !b.hidden);
+  const i = buttons.indexOf(document.activeElement);
+  if (i < 0) return;
+  event.preventDefault();
+  buttons[Math.max(0, Math.min(buttons.length - 1, i + (event.key === 'ArrowRight' ? 1 : -1)))].focus();
+});
+document.addEventListener('visibilitychange', () => {
+  ++generation;
+  clearTimeout(pollTimer);
+  if (document.hidden) message('Paused', '', 'Paused');
+  else if (token) poll();
+  else message('Pair this display', 'Open a fresh pairing link from the relay owner.', 'Unpaired');
+});
+async function start() {
+  const code = new URLSearchParams(location.hash.slice(1)).get('pair');
+  if (location.hash) history.replaceState(null, '', location.pathname);
+  if (code) {
+    try {
+      ({ token } = await api('/api/pair', code, {}));
+      try { localStorage.setItem(storageKey, token); } catch { /* usable until reload */ }
+    } catch { return message('Pairing failed', 'Check the relay and open a fresh pairing link.', 'Unpaired'); }
+  } else {
+    try { token = localStorage.getItem(storageKey); } catch {}
+  }
+  if (!token) return message('Pair this display', 'Open the pairing link from the relay owner.', 'Unpaired');
+  await poll();
+}
+start();
 </script>
 </body>
 </html>

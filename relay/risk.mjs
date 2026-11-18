@@ -1,47 +1,51 @@
-// Risk tiers decide what the glasses are allowed to do.
-//   low    -> approve with one confirm
-//   medium -> approve with one confirm (default for anything that reached a permission prompt)
-//   high   -> deny or defer only; approval must happen at the terminal
-// Tune these rules to your own repos. Rules are deliberately conservative.
+import path from 'node:path';
+import { lstatSync } from 'node:fs';
 
-const HIGH_BASH = [
-  [/\brm\s+(-\w*r\w*f|-\w*f\w*r)\b/, 'recursive force delete'],
-  [/\bgit\s+push\b.*(--force|-f\b|--force-with-lease)/, 'force push'],
-  [/\bgit\s+reset\s+--hard\b/, 'hard reset'],
-  [/\bgit\s+clean\s+-\w*f/, 'git clean'],
-  [/\bgit\s+push\b.*\b(main|master|prod|production|release)\b/, 'push to protected branch'],
-  [/\bsudo\b/, 'sudo'],
-  [/(curl|wget)[^|]*\|\s*(ba|z)?sh\b/, 'pipe to shell'],
-  [/\b(drop|truncate)\s+(table|database|schema)\b/i, 'destructive SQL'],
-  [/\bkubectl\s+(delete|apply|scale)\b/, 'kubectl mutate'],
-  [/\bterraform\s+(apply|destroy)\b/, 'terraform apply/destroy'],
-  [/\b(npm|pnpm|yarn)\s+publish\b|\bcargo\s+publish\b|\btwine\s+upload\b/, 'publish package'],
-  [/\bgh\s+(repo\s+delete|release\s+create|pr\s+merge)\b/, 'gh irreversible'],
-  [/\bchmod\s+-R\b|\bchown\s+-R\b/, 'recursive permission change'],
-  [/>\s*\/(etc|usr|bin|System)\b/, 'write to system path'],
-];
+const documents = new Set(['README.md', 'CHANGELOG.md', 'LICENSE']);
+const patterns = new Set(['*.md', '*.js', '*.mjs', '*.ts', '*.py', '*.json']);
+export const isObject = (value) =>
+  value !== null && typeof value === 'object' && !Array.isArray(value);
 
-const SENSITIVE_PATH = /(^|\/)(\.env(\..*)?|\.ssh\/|\.aws\/|id_rsa|credentials|secrets?\.)|\.pem$|\.key$/i;
+// Render control and direction-changing characters visibly, including line breaks.
+export function preview(value, limit = 68) {
+  if (typeof value !== 'string') return '';
+  const visible = value.replace(
+    /[\p{Cc}\p{Cf}\p{Zl}\p{Zp}]/gu,
+    (c) => '\\u' + c.codePointAt(0).toString(16).padStart(4, '0'),
+  );
+  if (visible.length <= limit) return visible;
+  const half = Math.floor(limit / 2);
+  return (
+    visible.slice(0, half) +
+    ' … [' +
+    (visible.length - 2 * half) +
+    ' omitted] … ' +
+    visible.slice(-half)
+  );
+}
 
-export function classify(tool = '', input = {}, cwd = '') {
-  const reasons = [];
-  const t = String(tool);
-
-  if (t === 'Bash') {
-    const cmd = String(input.command || '');
-    for (const [re, why] of HIGH_BASH) if (re.test(cmd)) reasons.push(why);
-    if (SENSITIVE_PATH.test(cmd)) reasons.push('touches secrets');
-    return { level: reasons.length ? 'high' : 'medium', reasons };
+export function classify(tool, input, cwd) {
+  if (!isObject(input) || !path.isAbsolute(cwd) || cwd === path.parse(cwd).root) return 'high';
+  if (Object.keys(input).length !== 1) return 'high';
+  if (tool === 'Glob' && patterns.has(input.pattern)) return 'low';
+  if (tool === 'Read' && typeof input.file_path === 'string') {
+    const name = path.basename(input.file_path);
+    if (documents.has(name) && input.file_path === path.join(cwd, name)) {
+      try {
+        if (lstatSync(input.file_path).isFile()) return 'low';
+      } catch {
+        /* Missing or inaccessible files require terminal review. */
+      }
+    }
   }
+  return 'high';
+}
 
-  if (['Write', 'Edit', 'MultiEdit', 'NotebookEdit'].includes(t)) {
-    const p = String(input.file_path || input.notebook_path || '');
-    if (SENSITIVE_PATH.test(p)) reasons.push('secrets file');
-    if (cwd && p.startsWith('/') && !p.startsWith(cwd)) reasons.push('outside project');
-    return { level: reasons.length ? 'high' : 'medium', reasons };
-  }
-
-  if (t.startsWith('mcp__')) return { level: 'medium', reasons: ['external tool'] };
-  if (['WebFetch', 'WebSearch', 'Read', 'Glob', 'Grep'].includes(t)) return { level: 'low', reasons };
-  return { level: 'medium', reasons };
+export function describe(tool, input, cwd) {
+  if (input.terminalOnly === true) return preview(input.detail, 120) || 'Review in Claude Code.';
+  if (tool === 'Read' && classify(tool, input, cwd) === 'low')
+    return './' + path.basename(input.file_path);
+  if (tool === 'Glob') return preview(input.pattern) || 'File search';
+  if (tool === 'Bash') return preview(input.command) || 'Shell command';
+  return preview(input.file_path || input.notebook_path) || 'Inspect the arguments in Claude Code.';
 }
