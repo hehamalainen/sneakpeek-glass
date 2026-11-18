@@ -61,8 +61,8 @@ async function relay(t, hold = 8000) {
   const decide = (id, decision) => api('/api/requests/' + id + '/decision', token, { decision });
   return { url, submit, code, token, api, queue, waitFor, decide, server };
 }
-function hook(event, url, token, timeout = 4000) {
-  const child = spawn(process.execPath, ['hook/sneakpeek-hook.mjs'], {
+function hook(event, url, token, timeout = 4000, host = 'Claude Code') {
+  const child = spawn(process.execPath, ['hook/sneakpeek-hook.mjs', host], {
     cwd: root,
     env: {
       ...process.env,
@@ -207,4 +207,95 @@ test('only exact file lists and ordinary project documents qualify', async (t) =
     ['mcp__demo', {}],
   ])
     assert.equal(classify(tool, input, dir), 'high');
+});
+
+const hostCases = [
+  {
+    host: 'Codex',
+    event: {
+      ...sample('Bash', { command: 'printf fixture', description: 'Fixture command' }),
+      turn_id: 'turn-demo',
+    },
+    denied: (output) => decision(output).behavior === 'deny',
+    deferred: '',
+  },
+  {
+    host: 'Antigravity',
+    event: {
+      conversationId: 'demo',
+      workspacePaths: [cwd],
+      stepIdx: 0,
+      toolCall: {
+        name: 'run_command',
+        args: {
+          CommandLine: 'printf fixture',
+          toolSummary: 'Fixture command',
+          WaitMsBeforeAsync: 500,
+        },
+      },
+    },
+    denied: (output) => JSON.parse(output).decision === 'deny',
+    deferred: JSON.stringify({ decision: 'force_ask' }),
+  },
+  {
+    host: 'GitHub Copilot',
+    event: {
+      sessionId: 'demo',
+      cwd,
+      toolName: 'bash',
+      toolArgs: JSON.stringify({ command: 'printf fixture' }),
+    },
+    denied: (output) => JSON.parse(output).permissionDecision === 'deny',
+    deferred: JSON.stringify({
+      permissionDecision: 'ask',
+      permissionDecisionReason: 'Review requested on the host.',
+    }),
+  },
+];
+for (const { host, event, denied, deferred } of hostCases) {
+  test(host + ' routes denials and explicit host review in its native format', async (t) => {
+    const r = await relay(t);
+    await r.queue();
+    for (const action of ['deny', 'defer']) {
+      const result = hook(event, r.url, r.submit, 4000, host);
+      const [item] = await r.waitFor(1);
+      assert.equal(item.host, host);
+      assert.equal(item.summary, 'printf fixture');
+      assert.equal((await r.decide(item.id, 'allow')).status, 403);
+      await r.decide(item.id, action);
+      const output = await result;
+      if (action === 'deny') assert(denied(output));
+      else assert.equal(output, deferred);
+    }
+  });
+}
+test('pre-tool adapters preserve host policy on failure and handle project reads', async (t) => {
+  const r = await relay(t);
+  for (const [host, event, expected, fallback] of [
+    [
+      'Antigravity',
+      {
+        conversationId: 'demo',
+        workspacePaths: [cwd],
+        toolCall: { name: 'read_file', args: { Path: path.join(cwd, 'README.md') } },
+      },
+      '{"decision":"auto_approve"}',
+      '{"decision":"allow"}',
+    ],
+    [
+      'GitHub Copilot',
+      { sessionId: 'demo', cwd, toolName: 'view', toolArgs: { path: path.join(cwd, 'README.md') } },
+      '',
+      '',
+    ],
+  ]) {
+    assert.equal(await hook(event, r.url, secret(), 4000, host), fallback);
+    await r.queue();
+    const result = hook(event, r.url, r.submit, 4000, host);
+    const [item] = await r.waitFor(1);
+    assert.equal(item.summary, './README.md');
+    assert.equal(item.risk, 'low');
+    await r.decide(item.id, 'allow');
+    assert.equal(await result, expected);
+  }
 });

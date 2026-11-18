@@ -51,7 +51,7 @@
 const $ = id => document.getElementById(id);
 const storageKey = 'sneakpeek.viewer';
 let token, current, confirmTimer, armedUntil = 0, generation = 0, pollTimer;
-let busy = false;
+let busy = false, decisionNotice = '';
 async function api(route, key, body) {
   const response = await fetch(route, {
     method: body ? 'POST' : 'GET', redirect: 'error',
@@ -65,7 +65,7 @@ function disarm() {
   clearTimeout(confirmTimer);
   armedUntil = 0;
   $('allow').classList.remove('armed');
-  $('allow').textContent = 'Approve';
+  $('allow').textContent = current?.host === 'GitHub Copilot' ? 'Continue' : 'Approve';
 }
 function message(title, hint, status) {
   current = null;
@@ -79,20 +79,22 @@ function message(title, hint, status) {
 function render({items, recent}) {
   const next = items[0];
   const last = recent[0];
-  const verbs = { allow: 'Approved', deny: 'Denied', defer: 'Deferred' };
-  $('recent').textContent = last ? verbs[last.decision] + ' · ' + last.project : '';
+  const verbs = { allow: last?.host === 'GitHub Copilot' ? 'Continued' : 'Approved', deny: 'Denied', defer: 'Deferred' };
+  $('recent').textContent = decisionNotice || (last ? verbs[last.decision] + ' · ' + last.project : '');
   if (!next) return message('All clear', 'No permission requests are waiting.', 'Connected');
   $('status').textContent = items.length + ' waiting';
   if (current?.id === next.id) return;
-  disarm();
   current = next;
+  disarm();
   $('empty').hidden = true;
   $('card').hidden = $('actions').hidden = false;
   const restricted = next.risk !== 'low';
   $('allow').hidden = restricted;
+  const preTool = ['Antigravity', 'GitHub Copilot'].includes(next.host);
+  $('later').textContent = preTool ? 'Host' : 'Terminal';
   $('risk').className = restricted ? 'high' : '';
-  $('risk').textContent = restricted ? 'Terminal approval' : 'Read only';
-  $('tool').textContent = next.tool;
+  $('risk').textContent = restricted ? (preTool ? 'Host review' : 'Terminal approval') : 'Read only';
+  $('tool').textContent = next.host + ' · ' + next.tool;
   $('what').textContent = next.summary;
   $('context').textContent = next.project + ' · session ' + next.session;
   $('later').focus();
@@ -109,7 +111,7 @@ async function poll() {
     if (err.status === 401) {
       token = null;
       message('Pair this display', 'Open a fresh pairing link from the relay owner.', 'Unpaired');
-    } else message('Relay offline', 'Check the Mac or use Claude Code.', 'Reconnecting');
+    } else message('Relay offline', 'Check the relay or use your agent.', 'Reconnecting');
   } finally {
     if (epoch === generation && token) pollTimer = setTimeout(poll, 1500);
   }
@@ -118,11 +120,15 @@ async function decide(decision) {
   if (!current || busy || document.hidden) return;
   const id = current.id;
   busy = true;
+  decisionNotice = '';
   ++generation;
   clearTimeout(pollTimer);
   message('Sending decision', '', 'Sending');
   try { await api('/api/requests/' + id + '/decision', token, {decision}); }
-  catch { $('recent').textContent = 'Decision unconfirmed. Check Claude Code.'; }
+  catch (err) {
+    decisionNotice = err.status === 404 ? 'Request already closed.' : 'Decision unconfirmed. Check the host.';
+    $('recent').textContent = decisionNotice;
+  }
   finally { busy = false; await poll(); }
 }
 $('later').onclick = () => decide('defer');

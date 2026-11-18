@@ -4,6 +4,8 @@ import { createHash, randomBytes, randomUUID, timingSafeEqual } from 'node:crypt
 import path from 'node:path';
 import { classify, describe, isObject, preview } from './risk.mjs';
 
+import { hosts } from '../hook/hosts.mjs';
+
 const port = Number(process.env.PORT ?? 8787);
 const holdMs = Number(process.env.SNEAKPEEK_HOLD_MS || 110000);
 const submitToken = process.env.SNEAKPEEK_TOKEN;
@@ -64,12 +66,12 @@ function settle(id, decision, by) {
   if (!entry) return;
   pending.delete(id);
   clearTimeout(entry.timer);
-  const { tool, project, session } = entry.item;
-  const record = { id, tool, project, session, decision, by, at: new Date().toISOString() };
+  const { host, tool, project, session } = entry.item;
+  const record = { id, host, tool, project, session, decision, by, at: new Date().toISOString() };
   recent.unshift(record);
   if (recent.length > 5) recent.pop();
   console.log(JSON.stringify(record));
-  send(entry.res, 200, { id, decision });
+  send(entry.res, 200, { id, decision, by });
 }
 const server = http.createServer(async (req, res) => {
   try {
@@ -87,8 +89,9 @@ const server = http.createServer(async (req, res) => {
     if (!matches(req.headers['x-sneakpeek-token'], submission ? submitToken : viewerToken))
       return send(res, 401, {});
     if (submission) {
-      const { tool, input, cwd, session } = await readJson(req);
+      const { host = 'Claude Code', tool, input, cwd, session } = await readJson(req);
       if (
+        !hosts.includes(host) ||
         !isObject(input) ||
         typeof cwd !== 'string' ||
         !path.isAbsolute(cwd) ||
@@ -98,7 +101,10 @@ const server = http.createServer(async (req, res) => {
         !tool
       )
         return send(res, 400, {});
-      const sessionTag = createHash('sha256').update(session).digest('hex').slice(0, 8);
+      const sessionTag = createHash('sha256')
+        .update(host + '\0' + session)
+        .digest('hex')
+        .slice(0, 8);
       if (
         pending.size >= 32 ||
         [...pending.values()].filter((p) => p.item.session === sessionTag).length >= 4
@@ -108,11 +114,12 @@ const server = http.createServer(async (req, res) => {
       const id = randomUUID();
       const item = {
         id,
+        host,
         project: preview(path.basename(cwd), 24),
         session: sessionTag,
         tool: preview(tool, 22),
-        risk: classify(tool, input, cwd),
-        summary: describe(tool, input, cwd),
+        risk: classify(tool, input, cwd, host),
+        summary: describe(tool, input, cwd, host),
       };
       const timer = setTimeout(() => settle(id, 'defer', 'timeout'), holdMs);
       pending.set(id, { res, item, timer });

@@ -1,0 +1,16 @@
+{
+  "sneakpeek-glass": {
+    "PreToolUse": [
+      {
+        "matcher": "run_command|view_file|read_file|write_file|edit_file|write_to_file|replace_file_content|multi_replace_file_content",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"$HOME/sneakpeek-glass/hook/sneakpeek-hook.mjs\" Antigravity",
+            "timeout": 120
+          }
+        ]
+      }
+    ]
+  }
+}

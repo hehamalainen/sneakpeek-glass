@@ -1,0 +1,13 @@
+{
+  "version": 1,
+  "hooks": {
+    "preToolUse": [
+      {
+        "type": "command",
+        "matcher": "bash|powershell|view|create|edit|apply_patch",
+        "bash": "node \"$HOME/sneakpeek-glass/hook/sneakpeek-hook.mjs\" 'GitHub Copilot'",
+        "timeoutSec": 120
+      }
+    ]
+  }
+}
