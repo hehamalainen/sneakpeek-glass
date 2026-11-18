@@ -69,3 +69,7 @@ The installed clients were exercised on macOS using loopback model fixtures and 
 For an on-device trial, pair a fresh relay with the glasses, run the README smoke command, and verify that two separate pinches produce one approval. Then deny a shell request, close the app during a pending request, and confirm that the host regains control. Record the glasses and phone software versions with the outcome.
 
 The app targets the display model. Physical gesture timing, phone tethering, pairing-link handling, readability in daylight, and battery use still need an on-device trial. Keep the app in the foreground during a trial. [Meta Web Apps](https://developers.meta.com/wearables/web-apps/)
+
+## License
+
+The source code is available under the [MIT License](LICENSE).

@@ -12,5 +12,6 @@
   },
   "devDependencies": {
     "playwright-core": "1.65.1"
-  }
+  },
+  "license": "MIT"
 }
